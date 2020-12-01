@@ -6,7 +6,7 @@ from newspaper import Article
 import csv
 
 
-url = "https://www.theonion.com/tag/opinion"
+url = "https://www.theonion.com/tag/opinion" #Change the url to the preference
 nltk.download("punkt")
 # Opening the connection and grabbing the page
 
