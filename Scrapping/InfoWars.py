@@ -1,33 +1,40 @@
 import bs4
-from urllib.request import urlopen as uReq
+from urllib.request import urlopen, Request
 from bs4 import BeautifulSoup as soup
 import nltk
 from newspaper import Article
 import csv
 
-url = "https://www.breitbart.com/"
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.3'}
+
+reg_url = "https://www.infowars.com/category/14/"
 nltk.download("punkt")
 # Opening the connection and grabbing the page
-client = uReq(url)
-raw_html = client.read()
+req = Request(url=reg_url, headers=headers)
+html = urlopen(req).read()
 
-client.close()
+# req.close()
 
 # Html parsing
-page_soup = soup(raw_html, 'html.parser')
+page_soup = soup(html, 'html.parser')
 
-containers = page_soup.findAll("section", {"class": "gb"})
+containers = page_soup.find_all(
+    "a", attrs={"class": "css-1xjmleq"})
 
 data_list = [["Title", "Author", "Text", "Label"]]
 
-with open('falsenews.csv', 'w', newline='', encoding="utf-8") as file:
+
+with open('InfowarsHealth.csv', 'w', newline='', encoding="utf-8") as file:
     fieldnames = ['Title', 'Author', 'Text', 'Label']
     writer = csv.DictWriter(file, fieldnames=fieldnames)
 
     writer.writeheader()
-    for container in containers:
-        reference = container.article.footer.h2.a["href"]
-        news_url = "https://www.breitbart.com"+reference
+    for item in containers:
+        reference = item["href"]
+        print(reference)
+
+        news_url = "https://www.infowars.com"+reference
         article = Article(news_url)
         article.download()
         article.parse()
