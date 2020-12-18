@@ -4,12 +4,16 @@ from sklearn.metrics import confusion_matrix
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
 import numpy as np
+from sklearn.pipeline import Pipeline
 import pandas as pd
 import nltk
 import re
 import string
-
+import seaborn as sns
 
 stopwords = nltk.corpus.stopwords.words('english')
 
@@ -50,29 +54,44 @@ class FakeNewsDetector(object):
 
     '''
 
-    def vectorise_text(self, data):
-        # encodes data into a numerical value
-        cv = CountVectorizer()
-        # Counts the number of frequencies of words in text and return a vector
-        cv.fit_transform(data)
-        count_matrix = cv.transform(data)
-        tfidf = TfidfTransformer(norm='l2')
-        tfidf.fit(count_matrix)
-        tfidf_matrix = tfidf.fit_transform(count_matrix)
-        # print(tfidf_matrix.toarray().shape)
-        return tfidf_matrix
+
+def logistic_Regression(X_train, X_test, Y_train, Y_test):
+    pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
+                                                    TfidfTransformer()), ('model', LogisticRegression())])
+
+    model_lr = pipe1.fit(X_train, Y_train)
+    lr_pred = model_lr.predict(X_test)
+    print(lr_pred)
+
+
+def knn_classifier(X_train, X_test, Y_train, Y_test):
+
+    pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
+                                                    TfidfTransformer()), ('model', KNeighborsClassifier(n_neighbors=3, weights='uniform'))])
+
+    model_knn = pipe1.fit(X_train, Y_train)
+    knn_pred = model_knn.predict(X_test)
+    print(knn_pred)
 
 
 def main():
     Fake_Detector = FakeNewsDetector()
-    df = pd.read_csv("sample.csv")
+    df = pd.read_csv("dataset.csv")
     cleaned_dataset = Fake_Detector.clean_data(df)
-    # print(cleaned_dataset.head())
-    dataset = cleaned_dataset[['Article', 'Label']]
-    X = dataset.iloc[:, 0]
-    Y = dataset.iloc[:, 1]
 
-    vectoriser = Fake_Detector.vectorise_text(X)
+    dataset = cleaned_dataset[['Article', 'Resource', 'Label']]
+    # print(dataset.head())
+    X = dataset.iloc[:, 0]
+    Z = dataset.iloc[:, 1]
+    Y = dataset.iloc[:, 2]
+    # sns.countplot(dataset['Label'])
+    # plt.show()
+    X_train, X_test, Y_train, Y_test = train_test_split(
+        X, Y, test_size=0.2, random_state=1)
+
+    logistic_Regression(X_train, X_test, Y_train, Y_test)
+
+    knn_classifier(X_train, X_test, Y_train, Y_test)
 
 
 if __name__ == '__main__':
