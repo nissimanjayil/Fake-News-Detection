@@ -74,7 +74,7 @@ def knn_classifier(x,y,z):
 
     for k in k_range:
         pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
-                                                    TfidfTransformer()), ('model', KNeighborsClassifier(n_neighbors=3, weights='uniform'))])
+                                                    TfidfTransformer()), ('model', KNeighborsClassifier(n_neighbors=k, weights='uniform'))])
         tmp = []
         plotted = False
         for train,test in kf.split(x):
