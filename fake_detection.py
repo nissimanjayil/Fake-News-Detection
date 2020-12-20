@@ -6,6 +6,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import train_test_split, KFold
 import numpy as np
 from sklearn.pipeline import Pipeline
@@ -51,9 +52,24 @@ class FakeNewsDetector(object):
         return dataset
 
 
+def baseline_model(x, y, z):
+    dummy = DummyClassifier(strategy='most_frequent')
+    dummy.fit(x, y)
+    dummy_pred = dummy.predict(x)
+    data = {'resource': z,
+            'label': dummy_pred}
+    df = pd.DataFrame(data)
+    sns.countplot(x='label', hue='resource',
+                  data=df, palette='deep')
+    plt.ylabel('No of Articles')
+    plt.xlabel('Label')
+    plt.title("Baseline Model")
+    plt.show()
+
+
 def logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
     pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
-                                                    TfidfTransformer()), ('model', LogisticRegression())])
+                                                    TfidfTransformer()), ('model', LogisticRegression(solver='lbfgs', penalty='l2'))])
 
     model_lr = pipe1.fit(X_train, Y_train)
     lr_pred = model_lr.predict(X_test)
@@ -62,6 +78,9 @@ def logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
     df = pd.DataFrame(data)
     sns.countplot(x='label', hue='resource',
                   data=df, palette='deep')
+    plt.ylabel('No of Articles')
+    plt.xlabel('Label')
+    plt.title("Logistic Regression predictions")
     plt.show()
 
 
@@ -82,16 +101,6 @@ def logistic_Regression_crossval(x, y, z):
             lr_pred = model_lr.predict(x[test])
             tmp.append(mean_squared_error(y[test], lr_pred))
 
-            if (not plotted):
-                data = {'resource': z[test],
-                        'label': lr_pred}
-                df = pd.DataFrame(data)
-                sns.countplot(x='label', hue='resource',
-                              data=df, palette='deep')
-                plt.title(f"Logistic Regression with c ={c}")
-                plt.show()
-                plotted = True
-
         mean_error.append(np.array(tmp).mean())
         std_error.append(np.array(tmp).std())
 
@@ -102,7 +111,24 @@ def logistic_Regression_crossval(x, y, z):
     plt.show()
 
 
-def knn_classifier(x, y, z):
+def knn_classifier(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
+    pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
+                                                    TfidfTransformer()), ('model', KNeighborsClassifier(n_neighbors=3, weights='uniform'))])
+
+    model_lr = pipe1.fit(X_train, Y_train)
+    lr_pred = model_lr.predict(X_test)
+    data = {'resource': Z_test,
+            'label': lr_pred}
+    df = pd.DataFrame(data)
+    sns.countplot(x='label', hue='resource',
+                  data=df, palette='deep')
+    plt.title("KNN Classifier Predictions")
+    plt.xlabel("Label")
+    plt.ylabel("No. of Articles")
+    plt.show()
+
+
+def knn_classifier_crossval(x, y, z):
     kf = KFold(n_splits=5)
     mean_error = []
     std_error = []
@@ -118,17 +144,6 @@ def knn_classifier(x, y, z):
             model_knn = pipe1.fit(x[train], y[train])
             knn_pred = model_knn.predict(x[test])
             tmp.append(mean_squared_error(y[test], knn_pred))
-
-            if (not plotted):
-                data = {'resource': z[test],
-                        'label': knn_pred}
-                df = pd.DataFrame(data)
-                sns.countplot(x='label', hue='resource',
-                              data=df, palette='deep')
-                # sns.countplot(knn_pred)
-                plt.title(f"KNN Classifier with k ={k}")
-                plt.show()
-                plotted = True
 
         mean_error.append(np.array(tmp).mean())
         std_error.append(np.array(tmp).std())
@@ -146,20 +161,30 @@ def main():
     cleaned_dataset = Fake_Detector.clean_data(df)
 
     dataset = cleaned_dataset[['Article', 'Resource', 'Label']]
-    # print(dataset.head())
+    print(dataset.head())
     X = dataset.iloc[:, 0]
     Z = dataset.iloc[:, 1]
     Y = dataset.iloc[:, 2]
+    baseline_model(X, Y, Z)
     # sns.countplot(dataset['Label'])
     # plt.show()
-    X_train, X_test, Y_train, Y_test, Z_train, Z_test = train_test_split(
-        X, Y, Z, test_size=0.2, random_state=1)
+    # data = {'resource': Z,
+    #         'label': Y}
+    # df = pd.DataFrame(data)
+    # sns.countplot(x='label', hue='resource',
+    #               data=df, palette='deep')
+    # plt.title("Plot of the Dataset")
+    # plt.xlabel("Label")
+    # plt.ylabel("No. of Articles")
+    # plt.show()
+    # X_train, X_test, Y_train, Y_test, Z_train, Z_test = train_test_split(
+    #     X, Y, Z, test_size=0.2, random_state=1)
 
-    logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
-    logistic_Regression_crossval(X, Y, Z)
+    # logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
+    # logistic_Regression_crossval(X, Y, Z)
 
-    #knn_classifier(X_train, X_test, Y_train, Y_test,Z_train, Z_test)
-    knn_classifier(X, Y, Z)
+    # knn_classifier(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
+    # knn_classifier_crossval(X, Y, Z)
 
 
 if __name__ == '__main__':
