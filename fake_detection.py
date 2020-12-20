@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from sklearn import metrics
-from sklearn.metrics import confusion_matrix, mean_squared_error
+from sklearn.metrics import confusion_matrix, mean_squared_error,roc_curve,accuracy_score
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -16,7 +16,7 @@ import re
 import string
 import seaborn as sns
 
-# nltk.download('stopwords')
+#nltk.download('stopwords')
 stopwords = nltk.corpus.stopwords.words('english')
 
 
@@ -115,10 +115,10 @@ def knn_classifier(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
     pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
                                                     TfidfTransformer()), ('model', KNeighborsClassifier(n_neighbors=3, weights='uniform'))])
 
-    model_lr = pipe1.fit(X_train, Y_train)
-    lr_pred = model_lr.predict(X_test)
+    model_knn = pipe1.fit(X_train, Y_train)
+    knn_pred = model_knn.predict(X_test)
     data = {'resource': Z_test,
-            'label': lr_pred}
+            'label': knn_pred}
     df = pd.DataFrame(data)
     sns.countplot(x='label', hue='resource',
                   data=df, palette='deep')
@@ -155,6 +155,58 @@ def knn_classifier_crossval(x, y, z):
     plt.show()
 
 
+def print_confusion_matrix(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
+    #Baseline Model
+    dummy = DummyClassifier(strategy='most_frequent')
+    dummy.fit(X_train, Y_train)
+    dummy_pred = dummy.predict(X_test)
+
+    baseline = confusion_matrix(Y_test,dummy_pred)
+    print("Baseline Model\n",baseline)
+    print("Accuarcy:", accuracy_score(Y_test,dummy_pred))
+
+    # Logisitic Regression
+    '''Put confusion matrix and accuracy for lr here'''
+
+    # Knn Model
+    pipe2 = Pipeline([('vect', CountVectorizer()), ('tfidf',
+                                                    TfidfTransformer()), ('model', KNeighborsClassifier(n_neighbors=3, weights='uniform'))])
+
+    model_knn = pipe2.fit(X_train, Y_train)
+    knn_pred = model_knn.predict(X_test)
+
+    knn = confusion_matrix(Y_test,knn_pred)
+    print("KNN Classifier\n",knn)
+    print("Accuracy:", accuracy_score(Y_test,knn_pred))
+
+
+def roc_curves(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
+
+    #Baseline Model
+    dummy = DummyClassifier(strategy='most_frequent')
+    dummy.fit(X_train, Y_train) 
+    base_y_scores = dummy.predict_proba(X_test)
+    fpr_baseline,tpr_baseline,_ = roc_curve(Y_test, base_y_scores[:,1])
+
+
+    # Knn Model
+    pipe2 = Pipeline([('vect', CountVectorizer()), ('tfidf',
+                                                    TfidfTransformer()), ('model', KNeighborsClassifier(n_neighbors=3, weights='uniform'))])
+
+    model_knn = pipe2.fit(X_train, Y_train)
+    knn_pred = model_knn.predict(X_test) 
+    knn_y_scores = model_knn.predict_proba(X_test)
+    fpr_knn,tpr_knn,_ = roc_curve(Y_test, knn_y_scores[:,1])
+
+    plt.plot(fpr_baseline,tpr_baseline,color='green')
+    plt.plot(fpr_knn,tpr_knn,color='yellow')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.legend(["Basline","KNN"])
+    plt.title('ROC Curves')
+    plt.show()
+
+
 def main():
     Fake_Detector = FakeNewsDetector()
     df = pd.read_csv("dataset.csv")
@@ -165,7 +217,7 @@ def main():
     X = dataset.iloc[:, 0]
     Z = dataset.iloc[:, 1]
     Y = dataset.iloc[:, 2]
-    baseline_model(X, Y, Z)
+    # baseline_model(X, Y, Z)
     # sns.countplot(dataset['Label'])
     # plt.show()
     # data = {'resource': Z,
@@ -177,14 +229,17 @@ def main():
     # plt.xlabel("Label")
     # plt.ylabel("No. of Articles")
     # plt.show()
-    # X_train, X_test, Y_train, Y_test, Z_train, Z_test = train_test_split(
-    #     X, Y, Z, test_size=0.2, random_state=1)
+    X_train, X_test, Y_train, Y_test, Z_train, Z_test = train_test_split(
+         X, Y, Z, test_size=0.2, random_state=1)
 
     # logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
     # logistic_Regression_crossval(X, Y, Z)
 
     # knn_classifier(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
     # knn_classifier_crossval(X, Y, Z)
+
+    print_confusion_matrix(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
+    roc_curves(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
 
 
 if __name__ == '__main__':
