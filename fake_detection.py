@@ -52,6 +52,11 @@ class FakeNewsDetector(object):
         return dataset
 
 
+'''
+The base line model which predicts most frequent label
+'''
+
+
 def baseline_model(x, y, z):
     dummy = DummyClassifier(strategy='most_frequent')
     dummy.fit(x, y)
@@ -65,6 +70,11 @@ def baseline_model(x, y, z):
     plt.xlabel('Label')
     plt.title("Baseline Model")
     plt.show()
+
+
+'''
+Logistic regression model
+'''
 
 
 def logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
@@ -82,6 +92,11 @@ def logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
     plt.xlabel('Label')
     plt.title("Logistic Regression predictions")
     plt.show()
+
+
+'''
+Logistic regression choose hyperparameter using crossval
+'''
 
 
 def logistic_Regression_crossval(x, y, z):
@@ -111,6 +126,11 @@ def logistic_Regression_crossval(x, y, z):
     plt.show()
 
 
+'''
+KNN classifier model
+'''
+
+
 def knn_classifier(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
     pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
                                                     TfidfTransformer()), ('model', KNeighborsClassifier(n_neighbors=3, weights='uniform'))])
@@ -126,6 +146,11 @@ def knn_classifier(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
     plt.xlabel("Label")
     plt.ylabel("No. of Articles")
     plt.show()
+
+
+'''
+KNN classifier : Cross validation to find suitable K neighbour
+'''
 
 
 def knn_classifier_crossval(x, y, z):
@@ -153,6 +178,11 @@ def knn_classifier_crossval(x, y, z):
     plt.ylabel('Mean Square Error')
     plt.title("k value for KNN performance")
     plt.show()
+
+
+'''
+Find the confusion matrix for both models(Logistic regression and KNN classifier)
+'''
 
 
 def print_confusion_matrix(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
@@ -185,6 +215,11 @@ def print_confusion_matrix(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
     knn = confusion_matrix(Y_test, knn_pred)
     print("KNN Classifier\n", knn)
     print("Accuracy:", accuracy_score(Y_test, knn_pred))
+
+
+'''
+ROC curves for both logistic regression and KNN classifier
+'''
 
 
 def roc_curves(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
@@ -232,35 +267,50 @@ def roc_curves(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
 def main():
     Fake_Detector = FakeNewsDetector()
     df = pd.read_csv("dataset.csv")
+    # Preprocessing
     cleaned_dataset = Fake_Detector.clean_data(df)
+    # New dataset
 
     dataset = cleaned_dataset[['Article', 'Resource', 'Label']]
+
     print(dataset.head())
-    X = dataset.iloc[:, 0]
-    Z = dataset.iloc[:, 1]
-    Y = dataset.iloc[:, 2]
-    # baseline_model(X, Y, Z)
-    # sns.countplot(dataset['Label'])
-    # plt.show()
-    # data = {'resource': Z,
-    #         'label': Y}
-    # df = pd.DataFrame(data)
-    # sns.countplot(x='label', hue='resource',
-    #               data=df, palette='deep')
-    # plt.title("Plot of the Dataset")
-    # plt.xlabel("Label")
-    # plt.ylabel("No. of Articles")
-    # plt.show()
+    X = dataset.iloc[:, 0]  # Article
+    Z = dataset.iloc[:, 1]  # Resource
+    Y = dataset.iloc[:, 2]  # Label
+
+    baseline_model(X, Y, Z)  # BASELINE MODEL
+    # PLOT OF DATASET
+    sns.countplot(dataset['Label'])
+    plt.show()
+    data = {'resource': Z,
+            'label': Y}
+    df = pd.DataFrame(data)
+    sns.countplot(x='label', hue='resource',
+                  data=df, palette='deep')
+    plt.title("Plot of the Dataset")
+    plt.xlabel("Label")
+    plt.ylabel("No. of Articles")
+    plt.show()
+
+    # TRAIN TEST SPLIT
     X_train, X_test, Y_train, Y_test, Z_train, Z_test = train_test_split(
         X, Y, Z, test_size=0.2, random_state=1)
 
-    # logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
-    # logistic_Regression_crossval(X, Y, Z)
+    # LOGISTIC REGRESSION
 
-    # knn_classifier(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
-    # knn_classifier_crossval(X, Y, Z)
+    logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
+    logistic_Regression_crossval(X, Y, Z)
+
+    # KNN CLASSIFIER
+
+    knn_classifier(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
+    knn_classifier_crossval(X, Y, Z)
+
+    # CONFUSION MATRIX
 
     print_confusion_matrix(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
+
+    # ROC CURVES
     roc_curves(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
 
 
