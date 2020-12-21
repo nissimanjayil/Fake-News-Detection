@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from sklearn import metrics
-from sklearn.metrics import confusion_matrix, mean_squared_error,roc_curve,accuracy_score
+from sklearn.metrics import confusion_matrix, mean_squared_error, roc_curve, accuracy_score
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -16,7 +16,7 @@ import re
 import string
 import seaborn as sns
 
-#nltk.download('stopwords')
+# nltk.download('stopwords')
 stopwords = nltk.corpus.stopwords.words('english')
 
 
@@ -69,7 +69,7 @@ def baseline_model(x, y, z):
 
 def logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
     pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
-                                                    TfidfTransformer()), ('model', LogisticRegression(solver='lbfgs', penalty='l2'))])
+                                                    TfidfTransformer()), ('model', LogisticRegression(solver='lbfgs', C=10))])
 
     model_lr = pipe1.fit(X_train, Y_train)
     lr_pred = model_lr.predict(X_test)
@@ -88,7 +88,7 @@ def logistic_Regression_crossval(x, y, z):
     kf = KFold(n_splits=5)
     mean_error = []
     std_error = []
-    c_range = [0.0001, 0.01, 1, 10, 100, 1000]
+    c_range = [0.01, 1, 10, 100]
 
     for c in c_range:
 
@@ -156,17 +156,24 @@ def knn_classifier_crossval(x, y, z):
 
 
 def print_confusion_matrix(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
-    #Baseline Model
+    # Baseline Model
     dummy = DummyClassifier(strategy='most_frequent')
     dummy.fit(X_train, Y_train)
     dummy_pred = dummy.predict(X_test)
 
-    baseline = confusion_matrix(Y_test,dummy_pred)
-    print("Baseline Model\n",baseline)
-    print("Accuarcy:", accuracy_score(Y_test,dummy_pred))
+    baseline = confusion_matrix(Y_test, dummy_pred)
+    print("Baseline Model\n", baseline)
+    print("Accuarcy:", accuracy_score(Y_test, dummy_pred))
 
     # Logisitic Regression
-    '''Put confusion matrix and accuracy for lr here'''
+    pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
+                                                    TfidfTransformer()), ('model', LogisticRegression(solver='lbfgs', C=10))])
+
+    model_lr = pipe1.fit(X_train, Y_train)
+    lr_pred = model_lr.predict(X_test)
+    lr = confusion_matrix(Y_test, lr_pred)
+    print("Logistic Regression\n", lr)
+    print("Accuracy:", accuracy_score(Y_test, lr_pred))
 
     # Knn Model
     pipe2 = Pipeline([('vect', CountVectorizer()), ('tfidf',
@@ -175,34 +182,49 @@ def print_confusion_matrix(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
     model_knn = pipe2.fit(X_train, Y_train)
     knn_pred = model_knn.predict(X_test)
 
-    knn = confusion_matrix(Y_test,knn_pred)
-    print("KNN Classifier\n",knn)
-    print("Accuracy:", accuracy_score(Y_test,knn_pred))
+    knn = confusion_matrix(Y_test, knn_pred)
+    print("KNN Classifier\n", knn)
+    print("Accuracy:", accuracy_score(Y_test, knn_pred))
 
 
 def roc_curves(X_train, X_test, Y_train, Y_test, Z_train, Z_test):
 
-    #Baseline Model
+    # Baseline Model
     dummy = DummyClassifier(strategy='most_frequent')
-    dummy.fit(X_train, Y_train) 
+    dummy.fit(X_train, Y_train)
     base_y_scores = dummy.predict_proba(X_test)
-    fpr_baseline,tpr_baseline,_ = roc_curve(Y_test, base_y_scores[:,1])
+    fpr_baseline, tpr_baseline, _ = roc_curve(Y_test, base_y_scores[:, 1])
+    # Logistic Regression
+    pipe1 = Pipeline([('vect', CountVectorizer()), ('tfidf',
+                                                    TfidfTransformer()), ('model', LogisticRegression(solver='lbfgs', C=10))])
 
+    model_lr = pipe1.fit(X_train, Y_train)
+    lr_pred = model_lr.predict(X_test)
+    lr = confusion_matrix(Y_test, lr_pred)
+    lr_y_scores = model_lr.predict_proba(X_test)
+    fpr_lr, tpr_lr, _ = roc_curve(Y_test, lr_y_scores[:, 1])
 
+    plt.plot(fpr_baseline, tpr_baseline, color='green')
+    plt.plot(fpr_lr, tpr_lr, color='red')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.legend(["Basline", "Logistic Regression"])
+    plt.title('ROC Curves')
+    plt.show()
     # Knn Model
     pipe2 = Pipeline([('vect', CountVectorizer()), ('tfidf',
                                                     TfidfTransformer()), ('model', KNeighborsClassifier(n_neighbors=3, weights='uniform'))])
 
     model_knn = pipe2.fit(X_train, Y_train)
-    knn_pred = model_knn.predict(X_test) 
+    knn_pred = model_knn.predict(X_test)
     knn_y_scores = model_knn.predict_proba(X_test)
-    fpr_knn,tpr_knn,_ = roc_curve(Y_test, knn_y_scores[:,1])
+    fpr_knn, tpr_knn, _ = roc_curve(Y_test, knn_y_scores[:, 1])
 
-    plt.plot(fpr_baseline,tpr_baseline,color='green')
-    plt.plot(fpr_knn,tpr_knn,color='yellow')
+    plt.plot(fpr_baseline, tpr_baseline, color='green')
+    plt.plot(fpr_knn, tpr_knn, color='yellow')
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.legend(["Basline","KNN"])
+    plt.legend(["Basline", "KNN"])
     plt.title('ROC Curves')
     plt.show()
 
@@ -230,7 +252,7 @@ def main():
     # plt.ylabel("No. of Articles")
     # plt.show()
     X_train, X_test, Y_train, Y_test, Z_train, Z_test = train_test_split(
-         X, Y, Z, test_size=0.2, random_state=1)
+        X, Y, Z, test_size=0.2, random_state=1)
 
     # logistic_Regression(X_train, X_test, Y_train, Y_test, Z_train, Z_test)
     # logistic_Regression_crossval(X, Y, Z)
